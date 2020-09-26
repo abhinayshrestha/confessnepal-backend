@@ -24,6 +24,7 @@ exports.postConfession = (req, res, next) => {
 
 exports.getConfession = (req, res, next) => {
     const { page } = req.params;
+    const userId = req.userId;
     Post.aggregate([
             {
                 $project : {
@@ -35,7 +36,10 @@ exports.getConfession = (req, res, next) => {
                     isPrivate : 1,
                     user : 1,
                     timeStamp : 1,
-                    tags : 1
+                    tags : 1,
+                    liked : {
+                       $in : [Number(userId), "$likes"]
+                    }
                 }
             },
             { $sort : { createdAt : -1 } },
@@ -135,7 +139,7 @@ exports.getComments = (req, res, next) => {
             },
            { $sort : { 'comments.createdAt' : -1 } },
            { $skip : Number(skipValue) },
-           { $limit : 10 }
+           { $limit : 2 }
         ])
         .then(comments => {
             return Post.populate(comments, { path : 'comments.user',  select : { name : 1, profilePicURL : 1 }  })
@@ -427,5 +431,35 @@ exports.deletePost = (req, res, next) => {
     })   
     .catch(err => {
         res.status(500).json({ message : err.message })
+    })
+}
+
+exports.likeConfess = (req, res, next) => {
+    const { postId } = req.params;
+    const { userId } = req;
+    Post.updateOne({ _id : postId },
+            { $addToSet : { likes : userId } })
+        .then(doc => {
+            res.status(200).json(doc)
+        })    
+        .catch(err => {
+            res.status(500).json({
+                message : err.message
+            })
+        })
+}
+
+exports.unlikeConfess = (req, res, next) => {
+    const { postId } = req.params;
+    const { userId } = req;
+    Post.updateOne({ _id : postId },
+        { $pull : { likes : userId } })
+    .then(doc => {
+        res.status(200).json(doc)
+    })    
+    .catch(err => {
+        res.status(500).json({
+            message : err.message
+        })
     })
 }

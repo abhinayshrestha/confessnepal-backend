@@ -15,5 +15,7 @@ router.patch('/edit/reply', authCheck ,postController.editReply);
 router.delete('/delete/reply/:replyId', authCheck ,postController.deleteReply);
 router.delete('/delete/comment/:commentId', authCheck ,postController.deleteComment);
 router.delete('/delete/post/:postId', authCheck ,postController.deletePost);
+router.patch('/like/post/:postId', authCheck ,postController.likeConfess);
+router.patch('/unlike/post/:postId', authCheck ,postController.unlikeConfess);
 
 module.exports = router;
