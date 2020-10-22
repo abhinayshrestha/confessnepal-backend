@@ -23,29 +23,54 @@ exports.postConfession = (req, res, next) => {
 }
 
 exports.getConfession = (req, res, next) => {
-    const { page } = req.params;
+    const { skipValue, tags } = req.params;
     const userId = req.userId;
-    Post.aggregate([
-            {
-                $project : {
-                    likesCount : { $size : "$likes" },
-                    shares : 1,
-                    createdAt : 1,
-                    content : 1, 
-                    commentsCount : { $size : "$comments" },
-                    isPrivate : 1,
-                    user : 1,
-                    timeStamp : 1,
-                    tags : 1,
-                    liked : {
-                       $in : [Number(userId), "$likes"]
+    const query = tags === 'all' ?
+            [
+                {
+                    $project : {
+                        likesCount : { $size : "$likes" },
+                        shares : 1,
+                        createdAt : 1,
+                        content : 1, 
+                        commentsCount : { $size : "$comments" },
+                        isPrivate : 1,
+                        user : 1,
+                        timeStamp : 1,
+                        tags : 1,
+                        liked : {
+                        $in : [Number(userId), "$likes"]
+                        }
                     }
-                }
-            },
-            { $sort : { createdAt : -1 } },
-            { $skip : page * 5 },
-            { $limit : 5 }
-        ])
+                },
+                { $sort : { createdAt : -1 } },
+                { $skip : Number(skipValue) },
+                { $limit : 2 }
+            ]
+            :
+            [
+                { $match : { tags : tags } },
+                {
+                    $project : {
+                        likesCount : { $size : "$likes" },
+                        shares : 1,
+                        createdAt : 1,
+                        content : 1, 
+                        commentsCount : { $size : "$comments" },
+                        isPrivate : 1,
+                        user : 1,
+                        timeStamp : 1,
+                        tags : 1,
+                        liked : {
+                           $in : [Number(userId), "$likes"]
+                        }
+                    }
+                },
+                { $sort : { createdAt : -1 } },
+                { $skip : Number(skipValue) },
+                { $limit : 5 }
+            ]
+    Post.aggregate(query)
         .then(doc => {
            return Post.populate(doc, { path : 'user', select : { name : 1, profilePicURL : 1 } })
                   .then(confess => {
@@ -393,7 +418,7 @@ exports.deleteComment = (req, res, next) => {
                 .then(doc => {
                     if(doc && doc.comments[0].user === Number(userId))
                     {
-                       return Post.findOneAndUpdate({  },
+                       return Post.findOneAndUpdate({ 'comments._id' : commentId },
                                     { $pull : { 'comments' : { _id :  mongoose.Types.ObjectId(commentId)}} })
                                 .then(_ => {
                                     res.status(200).json({

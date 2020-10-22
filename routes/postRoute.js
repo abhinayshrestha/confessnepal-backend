@@ -3,7 +3,7 @@ const postController = require('../controller/postController');
 const authCheck = require('../utils/authCheck')
 const router = express.Router();
 
-router.get('/get-post/:page', authCheck ,postController.getConfession);
+router.get('/get-post/:tags/:skipValue', authCheck ,postController.getConfession);
 router.get('/comment/:postId&:skipValue', authCheck ,postController.getComments);
 router.get('/replies/:commentId&:postId', authCheck ,postController.getReply);
 router.post('/create-post', authCheck ,postController.postConfession);
